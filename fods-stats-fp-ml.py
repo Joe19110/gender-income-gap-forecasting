@@ -27,6 +27,24 @@ import os
 import logging
 import scipy.stats as stats
 
+# Set all text to font size 24 and Times New Roman font
+plt.rcParams.update({
+    'font.family': 'serif',           # Use serif font family
+    'font.serif': ['Times New Roman', 'Times', 'DejaVu Serif'],  # Times New Roman as primary
+    'font.size': 24,           # Default font size - all text
+    'axes.titlesize': 24,      # Title font size
+    'axes.labelsize': 24,      # Axis label font size
+    'xtick.labelsize': 24,     # X-axis tick label size
+    'ytick.labelsize': 24,     # Y-axis tick label size
+    'legend.fontsize': 24,     # Legend font size
+    'figure.titlesize': 24,    # Figure title font size
+    'text.usetex': False       # Don't use LaTeX rendering
+})
+
+# Set seaborn font sizes (if used) and Times New Roman font
+sns.set(font='Times New Roman', font_scale=1.0)  # Times New Roman font, scale 1.0 (base size)
+sns.set_style("whitegrid")
+
 # Suppress TensorFlow logging BEFORE importing TensorFlow
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # Suppress all TensorFlow messages (0=all, 1=info, 2=warnings, 3=errors)
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'  # Disable oneDNN custom operations to suppress messages
@@ -93,7 +111,7 @@ gender_count = df_all.groupby(['Year', 'Sex_Label']).size().reset_index(name='Co
 gender_pivot = gender_count.pivot(index='Year', columns='Sex_Label', values='Count').fillna(0)
 gender_pivot = gender_pivot.sort_index()
 
-print("\n👥 Gender Count Per Year (table):")
+print("\n👥 Gender Count Per Year:")
 print(gender_pivot)
 
 # Grouped bar chart
@@ -106,11 +124,11 @@ female_counts = gender_pivot['Female'].values
 
 plt.bar(x - width/2, male_counts, width, label='Male Count')
 plt.bar(x + width/2, female_counts, width, label='Female Count')
-plt.xticks(x, years, rotation=45)
-plt.xlabel("Year")
-plt.ylabel("Number of Individuals")
-plt.title("Gender Count Per Year (Grouped Bar)")
-plt.legend()
+plt.xticks(x, years, rotation=45, fontsize=24)
+plt.xlabel("Year", fontsize=24)
+plt.ylabel("Number of Individuals", fontsize=24)
+plt.title("Gender Count Per Year (Grouped Bar)", fontsize=24, fontweight='bold')
+plt.legend(fontsize=24)
 plt.grid(alpha=0.2)
 plt.tight_layout()
 plt.show()
@@ -124,10 +142,11 @@ gender_pct['Female_pct'] = gender_pct['Female'] / gender_pct['Total']
 plt.figure(figsize=(12,6))
 plt.bar(years, gender_pct['Male_pct'], label='Male %')
 plt.bar(years, gender_pct['Female_pct'], bottom=gender_pct['Male_pct'], label='Female %')
-plt.xticks(years, rotation=45)
-plt.ylabel("Proportion")
-plt.title("Gender Proportion Per Year (Stacked % Bar)")
-plt.legend()
+plt.xticks(years, rotation=45, fontsize=24)
+plt.xlabel("Year", fontsize=24)
+plt.ylabel("Proportion", fontsize=24)
+plt.title("Gender Proportion Per Year", fontsize=24, fontweight='bold')
+plt.legend(fontsize=24)
 plt.tight_layout()
 plt.show()
 
@@ -139,7 +158,7 @@ plt.show()
 income_pivot = df_all.pivot_table(index='Year', columns='Sex_Label', values='Personal_Income', aggfunc='mean').fillna(0)
 income_pivot = income_pivot.sort_index()
 
-print("\n📄 Average Income Per Gender Per Year (table):")
+print("\n📄 Average Income Per Gender Per Year:")
 print(income_pivot.round(3))
 
 # Grouped bar chart for average incomes
@@ -151,22 +170,25 @@ female_avg = income_pivot['Female'].values
 
 plt.bar(x - bar_width/2, male_avg, bar_width, label='Male Avg Income')
 plt.bar(x + bar_width/2, female_avg, bar_width, label='Female Avg Income')
-plt.xticks(x, income_pivot.index.astype(int), rotation=45)
-plt.ylabel("Average Income")
-plt.title("Average Income by Gender Per Year (Grouped Bar)")
-plt.legend()
+plt.xticks(x, income_pivot.index.astype(int), rotation=45, fontsize=24)
+plt.xlabel("Year", fontsize=24)
+plt.ylabel("Average Income", fontsize=24)
+plt.title("Average Income by Gender Per Year", fontsize=24, fontweight='bold')
+plt.legend(fontsize=24)
 plt.grid(alpha=0.2)
 plt.tight_layout()
 plt.show()
 
 # Also show as line plot for trend clarity
 plt.figure(figsize=(12,6))
-plt.plot(income_pivot.index, male_avg, marker='o', label='Male Avg Income')
-plt.plot(income_pivot.index, female_avg, marker='o', label='Female Avg Income')
-plt.title("Average Income by Gender Per Year (Line)")
-plt.xlabel("Year")
-plt.ylabel("Average Income")
-plt.legend()
+plt.plot(income_pivot.index, male_avg, marker='o', label='Male Avg Income', markersize=8)
+plt.plot(income_pivot.index, female_avg, marker='o', label='Female Avg Income', markersize=8)
+plt.title("Average Income by Gender Per Year", fontsize=24, fontweight='bold')
+plt.xlabel("Year", fontsize=24)
+plt.ylabel("Average Income", fontsize=24)
+plt.legend(fontsize=24)
+plt.xticks(fontsize=24)
+plt.yticks(fontsize=24)
 plt.grid(alpha=0.2)
 plt.tight_layout()
 plt.show()
@@ -184,15 +206,30 @@ gap_series = (df_pivot['Male'] - df_pivot['Female']).sort_index()
 gap_years = gap_series.index.astype(int)
 gap_vals = gap_series.values
 
-print("\n📄 Gender Income Gap per Year (table):")
+print("\n📄 Gender Income Gap per Year:")
 print(pd.DataFrame({'Year': gap_years, 'Gap': gap_vals}).round(3))
 
+# Line chart for gender income gap
 plt.figure(figsize=(12,6))
 plt.plot(gap_years, gap_vals, marker='o', linewidth=2, markersize=8, color='tab:orange')
-plt.xticks(gap_years, rotation=45)
-plt.ylabel("Male - Female Income")
-plt.title("Gender Income Gap per Year (Line)")
+plt.xticks(gap_years, rotation=45, fontsize=24)
+plt.xlabel("Year", fontsize=24)
+plt.ylabel("Male - Female Income", fontsize=24)
+plt.title("Gender Income Gap per Year", fontsize=24, fontweight='bold')
+plt.yticks(fontsize=24)
 plt.grid(alpha=0.2)
+plt.tight_layout()
+plt.show()
+
+# Column/Bar chart for gender income gap
+plt.figure(figsize=(12,6))
+plt.bar(gap_years, gap_vals, color='tab:orange', alpha=0.7, width=0.6)
+plt.xticks(gap_years, rotation=45, fontsize=24)
+plt.xlabel("Year", fontsize=24)
+plt.ylabel("Male - Female Income", fontsize=24)
+plt.title("Gender Income Gap per Year", fontsize=24, fontweight='bold')
+plt.yticks(fontsize=24)
+plt.grid(alpha=0.2, axis='y')
 plt.tight_layout()
 plt.show()
 
@@ -206,6 +243,108 @@ summary_stats = df_all.groupby(['Year', 'Sex_Label'])['Personal_Income'].agg(
 
 print("\n📄 Summary Statistics (Income by Gender per Year):")
 print(summary_stats.round(3))
+
+# ----------------------------------------------------------------------------
+# Section 5: Statistical Test - Independent Samples t-test
+#   - Compare mean income between males and females
+# ----------------------------------------------------------------------------
+# Extract income data by gender
+male_income = df_all[df_all['Sex_Label'] == 'Male']['Personal_Income'].values
+female_income = df_all[df_all['Sex_Label'] == 'Female']['Personal_Income'].values
+
+# Calculate overall means
+mean_male = np.mean(male_income)
+mean_female = np.mean(female_income)
+mean_difference = mean_male - mean_female
+
+# Calculate sample sizes and standard deviations for diagnostics
+n_male = len(male_income)
+n_female = len(female_income)
+std_male = np.std(male_income, ddof=1)
+std_female = np.std(female_income, ddof=1)
+
+# Perform independent samples t-test (Welch's t-test)
+t_stat, p_value = stats.ttest_ind(male_income, female_income, equal_var=False)
+
+# Check if p-value is effectively 0 or underflowed
+# If p-value is 0 or nan, calculate it manually using t-distribution
+p_value_original = p_value
+if p_value == 0.0 or np.isnan(p_value) or p_value < np.finfo(float).tiny:
+    # Calculate degrees of freedom for Welch's t-test
+    s1_sq = std_male**2
+    s2_sq = std_female**2
+    df_welch = ((s1_sq/n_male + s2_sq/n_female)**2) / (((s1_sq/n_male)**2)/(n_male-1) + ((s2_sq/n_female)**2)/(n_female-1))
+    
+    # Calculate p-value using t-distribution (two-tailed)
+    try:
+        p_value_calc = 2 * (1 - stats.t.cdf(abs(t_stat), df_welch))
+        p_value = p_value_calc
+    except:
+        # If calculation fails, use survival function
+        p_value = 2 * stats.t.sf(abs(t_stat), df_welch)
+
+# Format p-value for display with maximum precision
+if p_value == 0.0 or p_value < np.finfo(float).tiny:
+    # For values that are effectively 0, calculate using log scale
+    try:
+        s1_sq = std_male**2
+        s2_sq = std_female**2
+        df_welch = ((s1_sq/n_male + s2_sq/n_female)**2) / (((s1_sq/n_male)**2)/(n_male-1) + ((s2_sq/n_female)**2)/(n_female-1))
+        # Use log survival function for very small p-values
+        log_sf = stats.t.logsf(abs(t_stat), df_welch)
+        log_p = np.log10(2) + log_sf / np.log(10)
+        if log_p < -100:
+            p_value_str = f"< 10^{log_p:.1f}"
+        else:
+            p_value_str = f"{10**log_p:.50e}"
+    except:
+        p_value_str = "< 10^-300 (effectively 0)"
+elif p_value < 1e-50:
+    # For extremely small values, show in scientific notation with many digits
+    p_value_str = f"{p_value:.50e}"
+elif p_value < 1e-10:
+    p_value_str = f"{p_value:.30e}"  # Scientific notation for very small values
+elif p_value < 0.0001:
+    p_value_str = f"{p_value:.30f}"  # Many decimal places
+else:
+    p_value_str = f"{p_value:.20f}"  # Many decimal places
+
+stat_test_table = pd.DataFrame({
+    'Statistic': ['Mean Income (Male)', 'Mean Income (Female)', 'Mean Difference', 't-statistic', 'p-value'],
+    'Value': [
+        f"${mean_male:,.2f}",
+        f"${mean_female:,.2f}",
+        f"${mean_difference:,.2f}",
+        f"{t_stat:.4f}",
+        p_value_str
+    ]
+})
+
+print("\n" + "="*80)
+print("📊 STATISTICAL TEST: INDEPENDENT SAMPLES T-TEST")
+print("="*80)
+print("\nDiagnostic Information:")
+print(f"  • Sample size (Male): {n_male:,}")
+print(f"  • Sample size (Female): {n_female:,}")
+print(f"  • Standard deviation (Male): ${std_male:,.2f}")
+print(f"  • Standard deviation (Female): ${std_female:,.2f}")
+print(f"  • t-statistic: {t_stat:.10f}")
+print(f"  • Raw p-value (before formatting): {p_value}")
+print(f"  • Original scipy p-value: {p_value_original}")
+print("\nComparison of Mean Income Between Males and Females:")
+print("-" * 80)
+print(stat_test_table.to_string(index=False))
+print("\nInterpretation:")
+if p_value < 0.001:
+    print(f"  • p-value < 0.001: Highly significant difference (p = {p_value:.20e})")
+elif p_value < 0.01:
+    print(f"  • p-value < 0.01: Very significant difference (p = {p_value:.20f})")
+elif p_value < 0.05:
+    print(f"  • p-value < 0.05: Significant difference (p = {p_value:.20f})")
+else:
+    print(f"  • p-value >= 0.05: No significant difference (p = {p_value:.20f})")
+print(f"  • Mean difference: ${mean_difference:,.2f}")
+print("="*80)
 
 # ============================================================================
 # TIME SERIES DATA PREPARATION FOR FORECASTING
@@ -562,18 +701,26 @@ else:
     print("\nLjung-Box Test: Insufficient data for statistical test")
 
 # Plot ARIMA residuals
-plt.figure(figsize=(12, 4))
-plt.subplot(1, 2, 1)
+plt.figure(figsize=(12, 6))
 plt.plot(resid_arima.index, resid_arima.values)
 plt.axhline(0, color='red', linestyle='--')
-plt.title("ARIMA Residuals Over Time")
-plt.xlabel("Time")
-plt.ylabel("Residuals")
+plt.title("ARIMA Residuals Over Time", fontsize=24, fontweight='bold')
+plt.xlabel("Time", fontsize=24)
+plt.ylabel("Residuals", fontsize=24)
+plt.xticks(fontsize=24)
+plt.yticks(fontsize=24)
 plt.grid(alpha=0.3)
+plt.tight_layout()
+plt.show()
 
-plt.subplot(1, 2, 2)
+# Plot ARIMA Residual ACF
+plt.figure(figsize=(12, 6))
 plot_acf(resid_arima, lags=min(10, len(resid_arima)//2), ax=plt.gca())
-plt.title("ARIMA Residual ACF")
+plt.title("ARIMA Residual ACF", fontsize=24, fontweight='bold')
+plt.xlabel("Lag", fontsize=24)
+plt.ylabel("ACF", fontsize=24)
+plt.xticks(fontsize=24)
+plt.yticks(fontsize=24)
 plt.tight_layout()
 plt.show()
 
@@ -597,18 +744,26 @@ else:
     print("\nLjung-Box Test: Insufficient data for statistical test")
 
 # Plot SARIMA residuals
-plt.figure(figsize=(12, 4))
-plt.subplot(1, 2, 1)
+plt.figure(figsize=(12, 6))
 plt.plot(resid_sarima.index, resid_sarima.values)
 plt.axhline(0, color='red', linestyle='--')
-plt.title("SARIMA Residuals Over Time")
-plt.xlabel("Time")
-plt.ylabel("Residuals")
+plt.title("SARIMA Residuals Over Time", fontsize=24, fontweight='bold')
+plt.xlabel("Time", fontsize=24)
+plt.ylabel("Residuals", fontsize=24)
+plt.xticks(fontsize=24)
+plt.yticks(fontsize=24)
 plt.grid(alpha=0.3)
+plt.tight_layout()
+plt.show()
 
-plt.subplot(1, 2, 2)
+# Plot SARIMA Residual ACF
+plt.figure(figsize=(12, 6))
 plot_acf(resid_sarima, lags=min(10, len(resid_sarima)//2), ax=plt.gca())
-plt.title("SARIMA Residual ACF")
+plt.title("SARIMA Residual ACF", fontsize=24, fontweight='bold')
+plt.xlabel("Lag", fontsize=24)
+plt.ylabel("ACF", fontsize=24)
+plt.xticks(fontsize=24)
+plt.yticks(fontsize=24)
 plt.tight_layout()
 plt.show()
 
@@ -636,18 +791,26 @@ else:
     print("\nLjung-Box Test: Insufficient data for statistical test")
 
 # Plot Prophet residuals
-plt.figure(figsize=(12, 4))
-plt.subplot(1, 2, 1)
+plt.figure(figsize=(12, 6))
 plt.plot(prophet_resid_series.index, prophet_resid_series.values)
 plt.axhline(0, color='red', linestyle='--')
-plt.title("Prophet Residuals Over Time")
-plt.xlabel("Time")
-plt.ylabel("Residuals")
+plt.title("Prophet Residuals Over Time", fontsize=24, fontweight='bold')
+plt.xlabel("Time", fontsize=24)
+plt.ylabel("Residuals", fontsize=24)
+plt.xticks(fontsize=24)
+plt.yticks(fontsize=24)
 plt.grid(alpha=0.3)
+plt.tight_layout()
+plt.show()
 
-plt.subplot(1, 2, 2)
+# Plot Prophet Residual ACF
+plt.figure(figsize=(12, 6))
 plot_acf(prophet_resid_series, lags=min(10, len(prophet_resid_series)//2), ax=plt.gca())
-plt.title("Prophet Residual ACF")
+plt.title("Prophet Residual ACF", fontsize=24, fontweight='bold')
+plt.xlabel("Lag", fontsize=24)
+plt.ylabel("ACF", fontsize=24)
+plt.xticks(fontsize=24)
+plt.yticks(fontsize=24)
 plt.tight_layout()
 plt.show()
 
@@ -675,18 +838,26 @@ else:
     print("\nLjung-Box Test: Insufficient data for statistical test")
 
 # Plot Linear Regression residuals
-plt.figure(figsize=(12, 4))
-plt.subplot(1, 2, 1)
+plt.figure(figsize=(12, 6))
 plt.plot(lr_resid_series.index, lr_resid_series.values)
 plt.axhline(0, color='red', linestyle='--')
-plt.title("Linear Regression Residuals Over Time")
-plt.xlabel("Time")
-plt.ylabel("Residuals")
+plt.title("Linear Regression Residuals Over Time", fontsize=24, fontweight='bold')
+plt.xlabel("Time", fontsize=24)
+plt.ylabel("Residuals", fontsize=24)
+plt.xticks(fontsize=24)
+plt.yticks(fontsize=24)
 plt.grid(alpha=0.3)
+plt.tight_layout()
+plt.show()
 
-plt.subplot(1, 2, 2)
+# Plot Linear Regression Residual ACF
+plt.figure(figsize=(12, 6))
 plot_acf(lr_resid_series, lags=min(10, len(lr_resid_series)//2), ax=plt.gca())
-plt.title("Linear Regression Residual ACF")
+plt.title("Linear Regression Residual ACF", fontsize=24, fontweight='bold')
+plt.xlabel("Lag", fontsize=24)
+plt.ylabel("ACF", fontsize=24)
+plt.xticks(fontsize=24)
+plt.yticks(fontsize=24)
 plt.tight_layout()
 plt.show()
 
@@ -941,10 +1112,12 @@ years = df_gender_plot['Year'].astype(int).values
 x = np.arange(len(years))
 plt.bar(x - width/2, df_gender_plot['Male'].values, width, label='Male Avg Income')
 plt.bar(x + width/2, df_gender_plot['Female'].values, width, label='Female Avg Income')
-plt.xticks(x, years, rotation=45)
-plt.ylabel("Average Personal Income")
-plt.title("Average Income by Gender per Year (Grouped Bar)")
-plt.legend()
+plt.xticks(x, years, rotation=45, fontsize=24)
+plt.xlabel("Year", fontsize=24)
+plt.ylabel("Average Personal Income", fontsize=24)
+plt.title("Average Income by Gender per Year (Grouped Bar)", fontsize=24, fontweight='bold')
+plt.legend(fontsize=24)
+plt.yticks(fontsize=24)
 plt.grid(alpha=0.2)
 plt.tight_layout()
 plt.show()
@@ -960,11 +1133,14 @@ male_counts_aligned = gender_pivot.loc[df_gender_plot['Year'], 'Male'].values
 female_counts_aligned = gender_pivot.loc[df_gender_plot['Year'], 'Female'].values
 ax2.plot(x, male_counts_aligned, color='black', marker='o', linestyle='--', label='Male Count')
 ax2.plot(x, female_counts_aligned, color='gray', marker='o', linestyle='--', label='Female Count')
-ax1.set_xticks(x); ax1.set_xticklabels(years, rotation=45)
-ax1.set_ylabel("Average Income")
-ax2.set_ylabel("Counts")
-ax1.set_title("Avg Income (bars) & Counts (lines) by Gender per Year")
-ax1.legend(loc='upper left'); ax2.legend(loc='upper right')
+ax1.set_xticks(x); ax1.set_xticklabels(years, rotation=45, fontsize=24)
+ax1.set_xlabel("Year", fontsize=24)
+ax1.set_ylabel("Average Income", fontsize=24)
+ax2.set_ylabel("Counts", fontsize=24)
+ax1.set_title("Avg Income (bars) & Counts (lines) by Gender per Year", fontsize=24, fontweight='bold')
+ax1.tick_params(axis='y', labelsize=24)
+ax2.tick_params(axis='y', labelsize=24)
+ax1.legend(loc='upper left', fontsize=24); ax2.legend(loc='upper right', fontsize=24)
 plt.tight_layout()
 plt.show()
 
@@ -993,21 +1169,23 @@ def plot_model(train_df, test_df, train_vals, test_vals, test_pred, future_x, fu
     - color: Color for model predictions/forecasts
     """
     plt.figure(figsize=(12,5))
-    plt.plot(train_df['ds'].dt.year, train_vals, marker='o', color='black', label='Train (Actual)')
-    plt.plot(test_df['ds'].dt.year, test_vals, marker='o', color='green', label='Test (Actual)')
-    plt.plot(test_df['ds'].dt.year, test_pred, linestyle='--', marker='x', color=color, label='Test Pred')
-    plt.plot(future_x, future_pred, linestyle=':', marker='x', color=color, label='Future Forecast')
+    plt.plot(train_df['ds'].dt.year, train_vals, marker='o', color='black', label='Train (Actual)', markersize=8)
+    plt.plot(test_df['ds'].dt.year, test_vals, marker='o', color='green', label='Test (Actual)', markersize=8)
+    plt.plot(test_df['ds'].dt.year, test_pred, linestyle='--', marker='x', color=color, label='Test Pred', markersize=8)
+    plt.plot(future_x, future_pred, linestyle=':', marker='x', color=color, label='Future Forecast', markersize=8)
     
     # Shade the forecast horizon area for visual clarity
     future_start = test_df['ds'].dt.year.max() + 0.2
     future_end = future_x.max() + 0.8
     plt.axvspan(future_start, future_end, color='orange', alpha=0.12)
     
-    plt.xlabel("Year")
-    plt.ylabel("Gender Income Gap (Male - Female)")
-    plt.title(title)
+    plt.xlabel("Year", fontsize=24)
+    plt.ylabel("Gender Income Gap (Male - Female)", fontsize=24)
+    plt.title(title, fontsize=24, fontweight='bold')
+    plt.xticks(fontsize=24)
+    plt.yticks(fontsize=24)
     plt.grid(alpha=0.3, linestyle='--')
-    plt.legend()
+    plt.legend(fontsize=24)
     plt.tight_layout()
     plt.show()
 
@@ -1061,16 +1239,16 @@ best_model_future = {
 
 plt.figure(figsize=(14, 7))
 # Actual values
-plt.plot(train_df['ds'].dt.year, train_values, marker='o', color='black', linewidth=2, label='Train (Actual)', markersize=6)
-plt.plot(test_df['ds'].dt.year, test_values, marker='o', color='green', linewidth=2, label='Test (Actual)', markersize=6)
+plt.plot(train_df['ds'].dt.year, train_values, marker='o', color='black', linewidth=2, label='Train (Actual)', markersize=8)
+plt.plot(test_df['ds'].dt.year, test_values, marker='o', color='green', linewidth=2, label='Test (Actual)', markersize=8)
 
 # Best model
-plt.plot(test_df['ds'].dt.year, best_model_test, linestyle='--', marker='s', color='tab:blue', linewidth=2, label=f'{best_model_name} (Test)', markersize=8)
-plt.plot(future_years_arr, best_model_future, linestyle=':', marker='s', color='tab:blue', linewidth=2, label=f'{best_model_name} (Future)', markersize=8)
+plt.plot(test_df['ds'].dt.year, best_model_test, linestyle='--', marker='s', color='tab:blue', linewidth=2, label=f'{best_model_name} (Test)', markersize=10)
+plt.plot(future_years_arr, best_model_future, linestyle=':', marker='s', color='tab:blue', linewidth=2, label=f'{best_model_name} (Future)', markersize=10)
 
 # Naive baseline
-plt.plot(test_df['ds'].dt.year, naive_forecast, linestyle='--', marker='x', color='gray', linewidth=1.5, label='Naive (Test)', markersize=6)
-plt.plot(future_years_arr, naive_future_vals, linestyle=':', marker='x', color='gray', linewidth=1.5, label='Naive (Future)', markersize=6)
+plt.plot(test_df['ds'].dt.year, naive_forecast, linestyle='--', marker='x', color='gray', linewidth=1.5, label='Naive (Test)', markersize=8)
+plt.plot(future_years_arr, naive_future_vals, linestyle=':', marker='x', color='gray', linewidth=1.5, label='Naive (Future)', markersize=8)
 
 # Add prediction intervals for best model if available
 if best_model_name == "Prophet":
@@ -1085,11 +1263,13 @@ future_start = test_df['ds'].dt.year.max() + 0.2
 future_end = future_years_arr.max() + 0.8
 plt.axvspan(future_start, future_end, color='orange', alpha=0.1, label='Forecast Horizon')
 
-plt.xlabel("Year", fontsize=12)
-plt.ylabel("Gender Income Gap (Male - Female)", fontsize=12)
-plt.title(f"Gender Income Gap: Actual vs Best Model ({best_model_name}) vs Naive Baseline", fontsize=14, fontweight='bold')
+plt.xlabel("Year", fontsize=24)
+plt.ylabel("Gender Income Gap (Male - Female)", fontsize=24)
+plt.title(f"Gender Income Gap: Actual vs Best Model ({best_model_name}) vs Naive Baseline", fontsize=24, fontweight='bold')
+plt.xticks(fontsize=24)
+plt.yticks(fontsize=24)
 plt.grid(alpha=0.3, linestyle='--')
-plt.legend(loc='best', fontsize=10)
+plt.legend(loc='best', fontsize=24)
 plt.tight_layout()
 plt.show()
 
@@ -1221,27 +1401,30 @@ mase_vals = [results_mase[m] for m in models_list]
 colors = ['green' if v < 1.0 else 'red' for v in mase_vals]  # Green if better than naive
 bars = plt.bar(models_list, mase_vals, color=colors, alpha=0.7)
 plt.axhline(1.0, color='black', linestyle='--', linewidth=2, label='Naive Baseline (MASE=1.0)')
-plt.ylabel("MASE", fontsize=12)
-plt.title("Model Performance: MASE on Test Period\n(MASE < 1.0 = better than naive)", fontsize=12, fontweight='bold')
-plt.xticks(rotation=45, ha='right')
+plt.ylabel("MASE", fontsize=24)
+plt.title("Model Performance: MASE on Test Period\n(MASE < 1.0 = better than naive)", fontsize=24, fontweight='bold')
+plt.xticks(rotation=45, ha='right', fontsize=24)
+plt.yticks(fontsize=24)
 for i, (bar, v) in enumerate(zip(bars, mase_vals)):
-    plt.text(bar.get_x() + bar.get_width()/2, v + 0.02, f"{v:.3f}", ha='center', fontsize=9)
-plt.legend()
+    plt.text(bar.get_x() + bar.get_width()/2, v + 0.02, f"{v:.3f}", ha='center', fontsize=24)
+plt.legend(fontsize=24)
 plt.grid(alpha=0.3, axis='y')
 plt.tight_layout()
 plt.show()
 
 # Prediction errors (residuals) plot - focus on best models
 plt.figure(figsize=(10, 5))
-plt.plot(comparison_df['Year'], comparison_df['Naive_Error'], marker='x', color='gray', label='Naive Error', linewidth=2)
-plt.plot(comparison_df['Year'], comparison_df['Prophet_Error'], marker='o', label='Prophet Error')
-plt.plot(comparison_df['Year'], comparison_df['ARIMA_Error'], marker='s', label='ARIMA Error')
-plt.plot(comparison_df['Year'], comparison_df['SARIMA_Error'], marker='^', label='SARIMA Error')
+plt.plot(comparison_df['Year'], comparison_df['Naive_Error'], marker='x', color='gray', label='Naive Error', linewidth=2, markersize=8)
+plt.plot(comparison_df['Year'], comparison_df['Prophet_Error'], marker='o', label='Prophet Error', markersize=8)
+plt.plot(comparison_df['Year'], comparison_df['ARIMA_Error'], marker='s', label='ARIMA Error', markersize=8)
+plt.plot(comparison_df['Year'], comparison_df['SARIMA_Error'], marker='^', label='SARIMA Error', markersize=8)
 plt.axhline(0, color='black', linestyle='--', linewidth=1)
-plt.xlabel("Year", fontsize=12)
-plt.ylabel("Error (Actual - Predicted)", fontsize=12)
-plt.title("Prediction Errors (Test Period)", fontsize=12, fontweight='bold')
-plt.legend()
+plt.xlabel("Year", fontsize=24)
+plt.ylabel("Error (Actual - Predicted)", fontsize=24)
+plt.title("Prediction Errors (Test Period)", fontsize=24, fontweight='bold')
+plt.xticks(fontsize=24)
+plt.yticks(fontsize=24)
+plt.legend(fontsize=24)
 plt.grid(alpha=0.3)
 plt.tight_layout()
 plt.show()
@@ -1467,16 +1650,17 @@ colors = ['green' if m < 1.0 else 'red' for m in mase_means]
 x_pos = np.arange(len(models_to_plot))
 bars = plt.bar(x_pos, mase_means, yerr=mase_stds, capsize=5, color=colors, alpha=0.7)
 plt.axhline(1.0, color='black', linestyle='--', linewidth=2, label='Naive Baseline (MASE=1.0)')
-plt.xlabel("Model", fontsize=12)
-plt.ylabel("MASE (Mean ± Std)", fontsize=12)
+plt.xlabel("Model", fontsize=24)
+plt.ylabel("MASE (Mean ± Std)", fontsize=24)
 plt.title("Rolling Window Validation: Average MASE Across All Windows\n(Lower is Better, Error Bars = Std Dev)", 
-          fontsize=12, fontweight='bold')
-plt.xticks(x_pos, models_to_plot, rotation=45, ha='right')
-plt.legend()
+          fontsize=24, fontweight='bold')
+plt.xticks(x_pos, models_to_plot, rotation=45, ha='right', fontsize=24)
+plt.yticks(fontsize=24)
+plt.legend(fontsize=24)
 plt.grid(alpha=0.3, axis='y')
 for i, (bar, mean, std) in enumerate(zip(bars, mase_means, mase_stds)):
     plt.text(bar.get_x() + bar.get_width()/2, mean + std + 0.05, 
-             f"{mean:.3f}\n(±{std:.3f})", ha='center', fontsize=9)
+             f"{mean:.3f}\n(±{std:.3f})", ha='center', fontsize=24)
 plt.tight_layout()
 plt.show()
 
@@ -1485,7 +1669,13 @@ plt.show()
 # ============================================================================
 # Display Prophet's time series components (trend, seasonality, etc.)
 # This helps understand what patterns Prophet identified in the data
-prophet_model.plot_components(forecast_full)
-plt.suptitle("Prophet Components", fontsize=12)
+fig = prophet_model.plot_components(forecast_full)
+# Update font sizes for all subplots in Prophet components
+for ax in fig.axes:
+    ax.set_xlabel(ax.get_xlabel(), fontsize=24)
+    ax.set_ylabel(ax.get_ylabel(), fontsize=24)
+    ax.set_title(ax.get_title(), fontsize=24, fontweight='bold')
+    ax.tick_params(labelsize=24)
+plt.suptitle("Prophet Components", fontsize=24, fontweight='bold')
 plt.tight_layout()
 plt.show()
