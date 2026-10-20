@@ -1,21 +1,18 @@
 # ============================================================================
-# TIME SERIES FORECASTING ANALYSIS: GENDER INCOME GAP PREDICTION
+# Forecasting the Gender Income Gap in the United States
 # ============================================================================
-# This script performs comprehensive time series forecasting analysis on
-# gender income gap data using multiple forecasting models:
-#   - Prophet (Facebook's time series forecasting)
-#   - ARIMA (AutoRegressive Integrated Moving Average)
-#   - SARIMA (Seasonal ARIMA)
-#   - Linear Regression
-#   - XGBoost (Gradient Boosting)
-#   - LSTM (Long Short-Term Memory Neural Network)
+# Reads cleaned ACS PUMS data (cleaned_dataset.csv) and performs:
+#   - Demographic analysis and exploratory visualization
+#   - Welch's t-test for gender income difference
+#   - Time series forecasting using Prophet, ARIMA, SARIMA,
+#     Linear Regression, XGBoost, and LSTM
+#   - Model evaluation (MAE, RMSE, MAPE, MASE)
+#   - Residual diagnostics and Ljung-Box tests
+#   - 3-year-ahead forecasting (2024-2026)
+#   - Expanding-window cross-validation
 #
-# The analysis includes:
-#   1. Demographic analysis and visualization
-#   2. Model training and evaluation on test period
-#   3. Future forecasting (3-year ahead)
-#   4. Comprehensive performance metrics and diagnostics
-#   5. Visualizations for all models
+# Input:  cleaned_dataset.csv (produced by clean_data.py)
+# Output: Interactive figures via matplotlib (plt.show())
 # ============================================================================
 
 import pandas as pd
@@ -80,8 +77,26 @@ sarima_order = (1, 1, 1) # SARIMA order: (p, d, q) via SARIMAX (non-seasonal)
 # ============================================================================
 # DATA LOADING AND PREPROCESSING
 # ============================================================================
-cleaned_file = r"C:\Users\joell\OneDrive - Bina Nusantara\SEMESTER 4\FODS\cleaned_dataset.csv"
+# Automatically detect folder where this script is placed
+base_folder = os.path.dirname(os.path.abspath(__file__))
+cleaned_file = os.path.join(base_folder, "cleaned_dataset.csv")
 df_all = pd.read_csv(cleaned_file, low_memory=False)
+
+# Print dataset statistics
+print("\n" + "="*80)
+print("📊 CLEANED DATASET STATISTICS")
+print("="*80)
+print(f"Total rows in cleaned dataset: {len(df_all):,}")
+
+if 'Year' in df_all.columns:
+    print("\nRows per Year:")
+    print("-" * 80)
+    year_counts = df_all['Year'].value_counts().sort_index()
+    for year, count in year_counts.items():
+        print(f"  {int(year)}: {count:,}")
+    print("-" * 80)
+    print(f"Total: {len(df_all):,}")
+    print("="*80)
 
 # Ensure necessary columns exist
 if 'Year' not in df_all.columns:
@@ -93,6 +108,90 @@ if 'Sex_Label' not in df_all.columns:
 # Keep only relevant columns and positive incomes
 df_all = df_all[['Year','Sex_Label','Personal_Income']].dropna()
 df_all = df_all[df_all['Personal_Income'] > 0]
+
+# ============================================================================
+# TABLE 1: VARIABLE DESCRIPTION
+# ============================================================================
+print("\n" + "="*80)
+print("📊 TABLE 1: VARIABLE DESCRIPTION")
+print("="*80)
+print("\nThis table lists all variables used in the analysis, including their")
+print("definitions, data types, and measurement units.")
+print("-" * 80)
+
+table1_data = {
+    'Variable': [
+        'Year',
+        'Sex_Label',
+        'Personal_Income',
+        'Gender Income Gap'
+    ],
+    'Definition': [
+        'Year of observation (2014-2023)',
+        'Gender classification (Male or Female)',
+        'Annual personal income in US dollars',
+        'Difference between male and female mean income (Male - Female)'
+    ],
+    'Data Type': [
+        'Integer',
+        'Categorical (String)',
+        'Numeric (Float)',
+        'Numeric (Float)'
+    ],
+    'Measurement Unit': [
+        'Year',
+        'Nominal',
+        'US Dollars ($)',
+        'US Dollars ($)'
+    ]
+}
+
+table1 = pd.DataFrame(table1_data)
+print(table1.to_string(index=False))
+print("-" * 80)
+print("="*80)
+
+# ============================================================================
+# TABLE 2: SUMMARY STATISTICS BY GENDER
+# ============================================================================
+print("\n" + "="*80)
+print("📊 TABLE 2: SUMMARY STATISTICS BY GENDER")
+print("="*80)
+print("\nThis table presents descriptive statistics for male and female income,")
+print("including mean, median, standard deviation, and sample size.")
+print("-" * 80)
+
+# Calculate summary statistics by gender
+male_income_stats = df_all[df_all['Sex_Label'] == 'Male']['Personal_Income']
+female_income_stats = df_all[df_all['Sex_Label'] == 'Female']['Personal_Income']
+
+table2_data = {
+    'Statistic': ['Mean', 'Median', 'Standard Deviation', 'Sample Size (n)'],
+    'Male': [
+        f"${male_income_stats.mean():,.2f}",
+        f"${male_income_stats.median():,.2f}",
+        f"${male_income_stats.std():,.2f}",
+        f"{len(male_income_stats):,}"
+    ],
+    'Female': [
+        f"${female_income_stats.mean():,.2f}",
+        f"${female_income_stats.median():,.2f}",
+        f"${female_income_stats.std():,.2f}",
+        f"{len(female_income_stats):,}"
+    ]
+}
+
+table2 = pd.DataFrame(table2_data)
+print(table2.to_string(index=False))
+print("-" * 80)
+
+# Calculate difference
+mean_diff = male_income_stats.mean() - female_income_stats.mean()
+median_diff = male_income_stats.median() - female_income_stats.median()
+print(f"\nDifference (Male - Female):")
+print(f"  • Mean Difference: ${mean_diff:,.2f}")
+print(f"  • Median Difference: ${median_diff:,.2f}")
+print("="*80)
 
 # ============================================================================
 # DEMOGRAPHIC ANALYSIS AND EXPLORATORY DATA VISUALIZATION
@@ -439,6 +538,90 @@ lr_model = LinearRegression()
 lr_model.fit(time_index_train.reshape(-1,1), train_values)
 lr_forecast = lr_model.predict(time_index_test.reshape(-1,1))
 
+# Extract coefficients for Table 5
+lr_intercept = lr_model.intercept_
+lr_slope = lr_model.coef_[0]
+
+# Calculate standard errors, t-values, and p-values manually
+# Using OLS formula: y = X*beta + epsilon
+X_train = np.column_stack([np.ones(len(time_index_train)), time_index_train])
+y_train_lr = train_values
+n = len(y_train_lr)
+p = 2  # intercept + slope
+
+# Calculate fitted values and residuals
+y_fitted = lr_model.predict(time_index_train.reshape(-1,1))
+residuals_lr = y_train_lr - y_fitted
+mse = np.sum(residuals_lr**2) / (n - p)  # Mean squared error
+
+# Calculate covariance matrix of coefficients
+X_train_matrix = np.column_stack([np.ones(len(time_index_train)), time_index_train])
+cov_matrix = mse * np.linalg.inv(X_train_matrix.T @ X_train_matrix)
+
+# Extract standard errors
+lr_intercept_se = np.sqrt(cov_matrix[0, 0])
+lr_slope_se = np.sqrt(cov_matrix[1, 1])
+
+# Calculate t-values
+lr_intercept_t = lr_intercept / lr_intercept_se
+lr_slope_t = lr_slope / lr_slope_se
+
+# Calculate p-values (two-tailed t-test)
+df = n - p
+lr_intercept_p = 2 * (1 - stats.t.cdf(abs(lr_intercept_t), df))
+lr_slope_p = 2 * (1 - stats.t.cdf(abs(lr_slope_t), df))
+
+# Create Table 5: Linear Regression Coefficients
+table5_data = {
+    'Coefficient': ['Intercept', 'Year'],
+    'Estimate': [lr_intercept, lr_slope],
+    'Standard Error': [lr_intercept_se, lr_slope_se],
+    't-value': [lr_intercept_t, lr_slope_t],
+    'p-value': [lr_intercept_p, lr_slope_p]
+}
+table5 = pd.DataFrame(table5_data)
+
+print("\n" + "="*80)
+print("📊 TABLE 5: LINEAR REGRESSION COEFFICIENTS")
+print("="*80)
+print("\nModel: Gender Income Gap = Intercept + (Year Coefficient × Year)")
+print("-" * 80)
+print(table5.round(4))
+print("-" * 80)
+
+# Interpretation
+print("\nInterpretation:")
+print(f"  • Intercept: {lr_intercept:.2f}")
+print(f"    - Estimated gender income gap at year 0 (baseline)")
+print(f"    - t-value: {lr_intercept_t:.4f}, p-value: {lr_intercept_p:.6f}")
+if lr_intercept_p < 0.05:
+    print(f"    - Statistically significant (p < 0.05)")
+else:
+    print(f"    - Not statistically significant (p ≥ 0.05)")
+
+print(f"\n  • Year Coefficient (Slope): {lr_slope:.2f}")
+print(f"    - Sign: {'Positive' if lr_slope > 0 else 'Negative'}")
+if lr_slope > 0:
+    print(f"    - Meaning: Gender income gap INCREASES by ${abs(lr_slope):,.2f} per year")
+else:
+    print(f"    - Meaning: Gender income gap DECREASES by ${abs(lr_slope):,.2f} per year")
+print(f"    - Standard Error: {lr_slope_se:.4f}")
+print(f"    - t-value: {lr_slope_t:.4f}, p-value: {lr_slope_p:.6f}")
+if lr_slope_p < 0.001:
+    print(f"    - Highly statistically significant (p < 0.001) ✓")
+elif lr_slope_p < 0.01:
+    print(f"    - Very statistically significant (p < 0.01) ✓")
+elif lr_slope_p < 0.05:
+    print(f"    - Statistically significant (p < 0.05) ✓")
+else:
+    print(f"    - Not statistically significant (p ≥ 0.05)")
+
+print(f"\n  • Model Summary:")
+print(f"    - R² = {lr_model.score(time_index_train.reshape(-1,1), train_values):.4f}")
+print(f"    - Sample size (n) = {n}")
+print(f"    - Degrees of freedom = {df}")
+print("="*80)
+
 # Generate future time indices for forecasting
 last_index = time_index_full.max()
 future_time_index = np.arange(last_index+1, last_index+1+future_horizon)
@@ -651,7 +834,16 @@ print(f"Training Period: {train_df['ds'].dt.year.min()} - {train_df['ds'].dt.yea
 print("\nForecast Accuracy Metrics:")
 print("-" * 80)
 print(metrics_df_extended[["MAE", "RMSE", "MAPE (%)", "MASE"]].round(3))
-print("\nMASE Interpretation: < 1.0 = better than naive baseline, > 1.0 = worse than naive")
+
+# Check if naive MASE > 1.0 (indicates test period is more volatile than training)
+naive_mase = metrics_df_extended.loc["Naive", "MASE"]
+if naive_mase > 1.0:
+    print(f"\n⚠️  Note: Naive model MASE = {naive_mase:.3f} > 1.0")
+    print("    This indicates the test period is more volatile than the training period.")
+    print(f"    Models with MASE < {naive_mase:.3f} are better than naive baseline.")
+    print("    The standard 'MASE < 1.0' interpretation doesn't apply when test period differs from training.")
+else:
+    print("\nMASE Interpretation: < 1.0 = better than naive baseline, > 1.0 = worse than naive")
 print("-" * 80)
 print("\nModel Diagnostics (AIC/BIC - Lower is Better):")
 print("-" * 80)
@@ -661,9 +853,11 @@ print(metrics_df_extended[["AIC", "BIC"]].round(2))
 metrics_df_extended_sorted = metrics_df_extended.sort_values("MASE", ascending=True)
 print("\nModel Ranking (by MASE - lower is better):")
 print("-" * 80)
+naive_mase = metrics_df_extended.loc["Naive", "MASE"]
 for idx, (model, row) in enumerate(metrics_df_extended_sorted.iterrows(), 1):
     mase_val = row['MASE']
-    better_than_naive = "✓" if mase_val < 1.0 else "✗"
+    # Compare to naive MASE (not 1.0) since naive MASE may be > 1.0 if test period is more volatile
+    better_than_naive = "✓" if mase_val < naive_mase else "✗"
     print(f"{idx}. {model:20s} - MASE: {mase_val:.3f} {better_than_naive} | MAE: {row['MAE']:.2f} | RMSE: {row['RMSE']:.2f}")
 
 # Store MASE for later use
@@ -692,11 +886,19 @@ print(f"Std Dev: {resid_arima.std():.4f}")
 max_lag = min(10, len(resid_arima) // 4) if len(resid_arima) > 4 else len(resid_arima) - 1
 test_lags = [min(5, max_lag), max_lag] if max_lag >= 5 else [max_lag]
 test_lags = list(set(test_lags))  # Remove duplicates
+ljung_box_arima_result = None
 if len(test_lags) > 0 and max(test_lags) > 0:
     ljung_box_arima = acorr_ljungbox(resid_arima, lags=test_lags, return_df=True)
     print("\nLjung-Box Test (H0: residuals are white noise):")
     print(ljung_box_arima.round(4))
     print("p-value > 0.05 indicates white noise residuals ✓")
+    # Store result for Table 6
+    max_lag_idx = ljung_box_arima.index[-1]
+    ljung_box_arima_result = {
+        'test_statistic': ljung_box_arima.loc[max_lag_idx, 'lb_stat'],
+        'df': max_lag,
+        'p_value': ljung_box_arima.loc[max_lag_idx, 'lb_pvalue']
+    }
 else:
     print("\nLjung-Box Test: Insufficient data for statistical test")
 
@@ -732,14 +934,22 @@ print(f"Mean: {resid_sarima.mean():.4f} (should be ~0)")
 print(f"Std Dev: {resid_sarima.std():.4f}")
 
 # Use appropriate lags based on sample size
-max_lag = min(10, len(resid_sarima) // 4) if len(resid_sarima) > 4 else len(resid_sarima) - 1
-test_lags = [min(5, max_lag), max_lag] if max_lag >= 5 else [max_lag]
-test_lags = list(set(test_lags))  # Remove duplicates
-if len(test_lags) > 0 and max(test_lags) > 0:
-    ljung_box_sarima = acorr_ljungbox(resid_sarima, lags=test_lags, return_df=True)
+max_lag_sarima = min(10, len(resid_sarima) // 4) if len(resid_sarima) > 4 else len(resid_sarima) - 1
+test_lags_sarima = [min(5, max_lag_sarima), max_lag_sarima] if max_lag_sarima >= 5 else [max_lag_sarima]
+test_lags_sarima = list(set(test_lags_sarima))  # Remove duplicates
+ljung_box_sarima_result = None
+if len(test_lags_sarima) > 0 and max(test_lags_sarima) > 0:
+    ljung_box_sarima = acorr_ljungbox(resid_sarima, lags=test_lags_sarima, return_df=True)
     print("\nLjung-Box Test (H0: residuals are white noise):")
     print(ljung_box_sarima.round(4))
     print("p-value > 0.05 indicates white noise residuals ✓")
+    # Store result for Table 6
+    max_lag_idx_sarima = ljung_box_sarima.index[-1]
+    ljung_box_sarima_result = {
+        'test_statistic': ljung_box_sarima.loc[max_lag_idx_sarima, 'lb_stat'],
+        'df': max_lag_sarima,
+        'p_value': ljung_box_sarima.loc[max_lag_idx_sarima, 'lb_pvalue']
+    }
 else:
     print("\nLjung-Box Test: Insufficient data for statistical test")
 
@@ -779,14 +989,22 @@ print(f"Mean: {prophet_resid_series.mean():.4f} (should be ~0)")
 print(f"Std Dev: {prophet_resid_series.std():.4f}")
 
 # Use appropriate lags based on sample size
-max_lag = min(10, len(prophet_resid_series) // 4) if len(prophet_resid_series) > 4 else len(prophet_resid_series) - 1
-test_lags = [min(5, max_lag), max_lag] if max_lag >= 5 else [max_lag]
-test_lags = list(set(test_lags))  # Remove duplicates
-if len(test_lags) > 0 and max(test_lags) > 0:
-    ljung_box_prophet = acorr_ljungbox(prophet_resid_series, lags=test_lags, return_df=True)
+max_lag_prophet = min(10, len(prophet_resid_series) // 4) if len(prophet_resid_series) > 4 else len(prophet_resid_series) - 1
+test_lags_prophet = [min(5, max_lag_prophet), max_lag_prophet] if max_lag_prophet >= 5 else [max_lag_prophet]
+test_lags_prophet = list(set(test_lags_prophet))  # Remove duplicates
+ljung_box_prophet_result = None
+if len(test_lags_prophet) > 0 and max(test_lags_prophet) > 0:
+    ljung_box_prophet = acorr_ljungbox(prophet_resid_series, lags=test_lags_prophet, return_df=True)
     print("\nLjung-Box Test (H0: residuals are white noise):")
     print(ljung_box_prophet.round(4))
     print("p-value > 0.05 indicates white noise residuals ✓")
+    # Store result for Table 6
+    max_lag_idx_prophet = ljung_box_prophet.index[-1]
+    ljung_box_prophet_result = {
+        'test_statistic': ljung_box_prophet.loc[max_lag_idx_prophet, 'lb_stat'],
+        'df': max_lag_prophet,
+        'p_value': ljung_box_prophet.loc[max_lag_idx_prophet, 'lb_pvalue']
+    }
 else:
     print("\nLjung-Box Test: Insufficient data for statistical test")
 
@@ -826,14 +1044,22 @@ print(f"Mean: {lr_resid_series.mean():.4f} (should be ~0)")
 print(f"Std Dev: {lr_resid_series.std():.4f}")
 
 # Use appropriate lags based on sample size
-max_lag = min(10, len(lr_resid_series) // 4) if len(lr_resid_series) > 4 else len(lr_resid_series) - 1
-test_lags = [min(5, max_lag), max_lag] if max_lag >= 5 else [max_lag]
-test_lags = list(set(test_lags))  # Remove duplicates
-if len(test_lags) > 0 and max(test_lags) > 0:
-    ljung_box_lr = acorr_ljungbox(lr_resid_series, lags=test_lags, return_df=True)
+max_lag_lr = min(10, len(lr_resid_series) // 4) if len(lr_resid_series) > 4 else len(lr_resid_series) - 1
+test_lags_lr = [min(5, max_lag_lr), max_lag_lr] if max_lag_lr >= 5 else [max_lag_lr]
+test_lags_lr = list(set(test_lags_lr))  # Remove duplicates
+ljung_box_lr_result = None
+if len(test_lags_lr) > 0 and max(test_lags_lr) > 0:
+    ljung_box_lr = acorr_ljungbox(lr_resid_series, lags=test_lags_lr, return_df=True)
     print("\nLjung-Box Test (H0: residuals are white noise):")
     print(ljung_box_lr.round(4))
     print("p-value > 0.05 indicates white noise residuals ✓")
+    # Store result for Table 6
+    max_lag_idx_lr = ljung_box_lr.index[-1]
+    ljung_box_lr_result = {
+        'test_statistic': ljung_box_lr.loc[max_lag_idx_lr, 'lb_stat'],
+        'df': max_lag_lr,
+        'p_value': ljung_box_lr.loc[max_lag_idx_lr, 'lb_pvalue']
+    }
 else:
     print("\nLjung-Box Test: Insufficient data for statistical test")
 
@@ -860,6 +1086,77 @@ plt.xticks(fontsize=24)
 plt.yticks(fontsize=24)
 plt.tight_layout()
 plt.show()
+
+# ============================================================================
+# TABLE 6: LJUNG-BOX TEST RESULTS
+# ============================================================================
+# Compile all Ljung-Box test results into a single table
+print("\n" + "="*80)
+print("📊 TABLE 6: LJUNG-BOX TEST RESULTS")
+print("="*80)
+print("\nLjung-Box Test: Tests if residuals are white noise (random)")
+print("H₀: Residuals are independently distributed (white noise)")
+print("H₁: Residuals are autocorrelated (patterns remain)")
+print("-" * 80)
+
+ljung_box_table_data = []
+
+# ARIMA Ljung-Box results
+if ljung_box_arima_result is not None:
+    ljung_box_table_data.append({
+        'Model': 'ARIMA',
+        'Test Statistic': ljung_box_arima_result['test_statistic'],
+        'Degrees of Freedom': ljung_box_arima_result['df'],
+        'p-value': ljung_box_arima_result['p_value']
+    })
+
+# SARIMA Ljung-Box results
+if ljung_box_sarima_result is not None:
+    ljung_box_table_data.append({
+        'Model': 'SARIMA',
+        'Test Statistic': ljung_box_sarima_result['test_statistic'],
+        'Degrees of Freedom': ljung_box_sarima_result['df'],
+        'p-value': ljung_box_sarima_result['p_value']
+    })
+
+# Prophet Ljung-Box results
+if ljung_box_prophet_result is not None:
+    ljung_box_table_data.append({
+        'Model': 'Prophet',
+        'Test Statistic': ljung_box_prophet_result['test_statistic'],
+        'Degrees of Freedom': ljung_box_prophet_result['df'],
+        'p-value': ljung_box_prophet_result['p_value']
+    })
+
+# Linear Regression Ljung-Box results
+if ljung_box_lr_result is not None:
+    ljung_box_table_data.append({
+        'Model': 'Linear Regression',
+        'Test Statistic': ljung_box_lr_result['test_statistic'],
+        'Degrees of Freedom': ljung_box_lr_result['df'],
+        'p-value': ljung_box_lr_result['p_value']
+    })
+
+# Create and display Table 6
+if len(ljung_box_table_data) > 0:
+    table6 = pd.DataFrame(ljung_box_table_data)
+    print(table6.round(4))
+    print("-" * 80)
+    print("\nInterpretation:")
+    print("  • p-value > 0.05: Fail to reject H₀ → Residuals are white noise → Model is adequate ✓")
+    print("  • p-value ≤ 0.05: Reject H₀ → Residuals have autocorrelation → Model needs improvement ✗")
+    print("\nResults Summary:")
+    for _, row in table6.iterrows():
+        model_name = row['Model']
+        p_val = row['p-value']
+        if p_val > 0.05:
+            status = "✓ White noise (Model adequate)"
+        else:
+            status = "✗ Autocorrelation present (Model needs improvement)"
+        print(f"  • {model_name}: p-value = {p_val:.4f} → {status}")
+else:
+    print("No Ljung-Box test results available (insufficient data)")
+print("="*80)
 
 # ============================================================================
 # TEST PERIOD COMPARISON: ACTUAL vs PREDICTED VALUES
@@ -1398,11 +1695,15 @@ print(full_table_display.round(2))
 plt.figure(figsize=(10, 5))
 models_list = list(results_mase.keys())
 mase_vals = [results_mase[m] for m in models_list]
-colors = ['green' if v < 1.0 else 'red' for v in mase_vals]  # Green if better than naive
+naive_mase = results_mase["Naive"]
+colors = ['green' if v < naive_mase else 'red' for v in mase_vals]  # Green if better than naive
 bars = plt.bar(models_list, mase_vals, color=colors, alpha=0.7)
-plt.axhline(1.0, color='black', linestyle='--', linewidth=2, label='Naive Baseline (MASE=1.0)')
+plt.axhline(naive_mase, color='black', linestyle='--', linewidth=2, label=f'Naive Baseline (MASE={naive_mase:.3f})')
 plt.ylabel("MASE", fontsize=24)
-plt.title("Model Performance: MASE on Test Period\n(MASE < 1.0 = better than naive)", fontsize=24, fontweight='bold')
+if naive_mase > 1.0:
+    plt.title(f"Model Performance: MASE on Test Period\n(MASE < {naive_mase:.3f} = better than naive)", fontsize=24, fontweight='bold')
+else:
+    plt.title("Model Performance: MASE on Test Period\n(MASE < 1.0 = better than naive)", fontsize=24, fontweight='bold')
 plt.xticks(rotation=45, ha='right', fontsize=24)
 plt.yticks(fontsize=24)
 for i, (bar, v) in enumerate(zip(bars, mase_vals)):
@@ -1645,11 +1946,15 @@ plt.figure(figsize=(12, 6))
 models_to_plot = [m for m in rolling_summary_df.index if len(rolling_results[m]["mase"]) > 0]
 mase_means = [rolling_summary_df.loc[m, "Avg MASE"] for m in models_to_plot]
 mase_stds = [rolling_summary_df.loc[m, "Std MASE"] for m in models_to_plot]
-colors = ['green' if m < 1.0 else 'red' for m in mase_means]
+# Use naive MASE as baseline for color coding
+naive_mase_rolling = rolling_summary_df.loc["Naive", "Avg MASE"] if "Naive" in rolling_summary_df.index else 1.0
+colors = ['green' if m < naive_mase_rolling else 'red' for m in mase_means]
 
 x_pos = np.arange(len(models_to_plot))
 bars = plt.bar(x_pos, mase_means, yerr=mase_stds, capsize=5, color=colors, alpha=0.7)
-plt.axhline(1.0, color='black', linestyle='--', linewidth=2, label='Naive Baseline (MASE=1.0)')
+# Use naive MASE as baseline if available, otherwise 1.0
+naive_mase_rolling = rolling_summary_df.loc["Naive", "Avg MASE"] if "Naive" in rolling_summary_df.index else 1.0
+plt.axhline(naive_mase_rolling, color='black', linestyle='--', linewidth=2, label=f'Naive Baseline (MASE={naive_mase_rolling:.3f})')
 plt.xlabel("Model", fontsize=24)
 plt.ylabel("MASE (Mean ± Std)", fontsize=24)
 plt.title("Rolling Window Validation: Average MASE Across All Windows\n(Lower is Better, Error Bars = Std Dev)", 

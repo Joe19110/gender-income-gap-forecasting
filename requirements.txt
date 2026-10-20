@@ -1,0 +1,26 @@
+# ==============================================================================
+# Python dependencies for Gender Income Gap Forecasting
+# ==============================================================================
+# Tested with Python 3.10+
+
+# Data manipulation and numerical computation
+pandas>=2.0
+numpy>=1.24
+
+# Visualization
+matplotlib>=3.7
+seaborn>=0.12
+
+# Statistical models
+statsmodels>=0.14
+scipy>=1.10
+
+# Facebook Prophet (time series forecasting)
+prophet>=1.1
+
+# Machine learning
+scikit-learn>=1.2
+xgboost>=1.7
+
+# Deep learning (LSTM)
+tensorflow>=2.12

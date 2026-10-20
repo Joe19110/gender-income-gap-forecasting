@@ -1,13 +1,17 @@
+# ACS PUMS Data Cleaning and Standardization Pipeline (2014-2023)
+# Reads raw ACS PUMS CSV files, cleans and standardizes columns,
+# filters records, and outputs a single cleaned_dataset.csv.
+
 import pandas as pd
 import os
 
 # Automatically detect folder where this script is placed
 base_folder = os.path.dirname(os.path.abspath(__file__))
 
-# Dataset folder inside FODS
+# Raw PUMS data directory
 data_folder = os.path.join(base_folder, "dataset")
 
-# Output file in FODS (not inside dataset)
+# Output cleaned CSV file
 output_file = os.path.join(base_folder, "cleaned_dataset.csv")
 
 cleaned_dfs = []

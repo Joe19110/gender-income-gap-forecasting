@@ -1,0 +1,51 @@
+# ==============================================================================
+# .gitignore — Gender Income Gap Forecasting Project
+# ==============================================================================
+
+# ----- Large data files (not suitable for Git) -----
+# Raw ACS PUMS CSVs (~1-1.5 GB each, 20 files)
+dataset/
+
+# Cleaned/processed dataset (~1.1 GB)
+cleaned_dataset.csv
+
+# ----- Python -----
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+dist/
+build/
+
+# ----- Virtual environments -----
+venv/
+env/
+.venv/
+.env/
+
+# ----- Jupyter / IPython -----
+.ipynb_checkpoints/
+*.ipynb
+
+# ----- IDE / Editor -----
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ----- OS-generated files -----
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ----- TensorFlow / Keras -----
+*.h5
+*.hdf5
+*.keras
+logs/
+
+# ----- Misc -----
+*.log
+*.tmp
